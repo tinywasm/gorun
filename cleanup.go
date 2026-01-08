@@ -93,8 +93,8 @@ func (h *GoRun) stopProgramAndCleanupUnsafe(killAll bool) error {
 	// First stop our specific process
 	err := h.stopProgramUnsafe()
 
-	// If requested, also kill all other instances
-	if killAll && h.ExecProgramPath != "" {
+	// If requested, also kill all other instances (unless disabled via flag or global settings)
+	if killAll && !h.DisableGlobalCleanup && !DisableGlobalCleanup && h.ExecProgramPath != "" {
 		// Extract executable name from path
 		execName := h.ExecProgramPath
 		if lastSlash := strings.LastIndex(execName, "/"); lastSlash != -1 {
