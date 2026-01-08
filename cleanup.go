@@ -11,7 +11,13 @@ import (
 
 // KillAllByName kills all running processes that match the given executable name
 // This is useful for cleanup when multiple instances might be running
-func KillAllByName(executableName string) error {
+func KillAllByName(executableName string, disableGlobal bool) error {
+	// SAFETY: During tests, we might want to disable global cleanup to avoid
+	// accidentally killing the IDE or other unrelated processes.
+	if disableGlobal {
+		return nil
+	}
+
 	switch runtime.GOOS {
 	case "windows":
 		return killAllWindows(executableName)
@@ -51,10 +57,18 @@ func killAllUnix(executableName string) error {
 	pids := strings.Fields(string(output))
 	var errors []string
 
+	myPid := os.Getpid()
+	parentPid := os.Getppid()
+
 	for _, pidStr := range pids {
 		pid, err := strconv.Atoi(strings.TrimSpace(pidStr))
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("invalid PID %s: %v", pidStr, err))
+			continue
+		}
+
+		// SAFETY: Never kill ourselves or our parent (IDE)
+		if pid == myPid || pid == parentPid {
 			continue
 		}
 
@@ -93,8 +107,8 @@ func (h *GoRun) stopProgramAndCleanupUnsafe(killAll bool) error {
 	// First stop our specific process
 	err := h.stopProgramUnsafe()
 
-	// If requested, also kill all other instances (unless disabled via flag or global settings)
-	if killAll && !h.DisableGlobalCleanup && !DisableGlobalCleanup && h.ExecProgramPath != "" {
+	// If requested, also kill all other instances (safety check inside KillAllByName)
+	if killAll && h.ExecProgramPath != "" {
 		// Extract executable name from path
 		execName := h.ExecProgramPath
 		if lastSlash := strings.LastIndex(execName, "/"); lastSlash != -1 {
@@ -104,7 +118,7 @@ func (h *GoRun) stopProgramAndCleanupUnsafe(killAll bool) error {
 			execName = execName[lastBackslash+1:]
 		}
 
-		if cleanupErr := KillAllByName(execName); cleanupErr != nil {
+		if cleanupErr := KillAllByName(execName, h.DisableGlobalCleanup); cleanupErr != nil {
 			// Log the cleanup error but don't override the main error
 			fmt.Fprintf(os.Stderr, "Warning: Failed to cleanup all instances of %s: %v\n", execName, cleanupErr)
 		}

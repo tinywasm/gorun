@@ -157,7 +157,7 @@ func TestStopProgramAndCleanup_NoCleanup(t *testing.T) {
 
 func TestKillAllByName_NonExistent(t *testing.T) {
 	// Test killing a non-existent program - should not error
-	err := KillAllByName("nonexistent_program_12345")
+	err := KillAllByName("nonexistent_program_12345", false)
 	if err != nil {
 		t.Errorf("KillAllByName should not error for non-existent program: %v", err)
 	}

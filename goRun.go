@@ -5,10 +5,6 @@ import (
 	"sync"
 )
 
-// DisableGlobalCleanup is a global flag to disable aggressive process killing (pgrep -f)
-// in all gorun instances. This is primarily used in tests to protect the IDE.
-var DisableGlobalCleanup bool
-
 type Config struct {
 	ExecProgramPath      string          // eg: "server/main.exe"
 	RunArguments         func() []string // eg: []string{"dev"}
