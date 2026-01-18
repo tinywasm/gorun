@@ -75,7 +75,6 @@ func (h *GoRun) stopProgramUnsafe() error {
 	done := make(chan error, 1)
 	go func() {
 		_, err := process.Wait()
-		h.hasWaited = true // Mark that Wait() has been called (mutex already held by parent)
 		done <- err
 	}()
 
@@ -86,13 +85,18 @@ func (h *GoRun) stopProgramUnsafe() error {
 		if err := process.Kill(); err != nil {
 			// If kill fails with "process already finished", that's not an error
 			if err.Error() == "os: process already finished" {
+				h.hasWaited = true
 				return nil
 			}
 			return err
 		}
+		// Wait for the process to actually die after kill
+		<-done
+		h.hasWaited = true
 		return nil
 	case err := <-done:
 		// Process terminated gracefully
+		h.hasWaited = true
 		// If we get "no child processes" error, it means the process already exited
 		if err != nil && (err.Error() == "waitid: no child processes" || err.Error() == "wait: no child processes") {
 			return nil // This is not an error, the process already exited
