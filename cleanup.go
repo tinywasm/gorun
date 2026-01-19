@@ -42,15 +42,16 @@ func killAllWindows(executableName string) error {
 
 // killAllUnix kills all processes by name on Unix-like systems (Linux, macOS)
 func killAllUnix(executableName string) error {
-	// First, find all PIDs matching the executable name
-	cmd := exec.Command("pgrep", "-f", executableName)
+	// First, find all PIDs exactly matching the executable name
+	// SAFETY: Do NOT use -f as it matches the entire command line and can kill unrelated processes (like the IDE)
+	cmd := exec.Command("pgrep", "-x", executableName)
 	output, err := cmd.Output()
 	if err != nil {
 		// pgrep returns 1 if no processes found, which is ok
 		if exitError, ok := err.(*exec.ExitError); ok && exitError.ExitCode() == 1 {
 			return nil // No processes found
 		}
-		return fmt.Errorf("failed to find processes %s: %v", executableName, err)
+		return fmt.Errorf("failed to find processes matching %s: %v", executableName, err)
 	}
 
 	// Parse PIDs and kill them
