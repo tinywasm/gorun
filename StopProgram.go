@@ -38,9 +38,15 @@ func (h *GoRun) stopProgramUnsafe() error {
 		return nil
 	}
 
-	process := h.Cmd.Process
 	h.isRunning = false
+	err := killProcessGraceful(h.Cmd.Process)
+	h.hasWaited = true
+	return err
+}
 
+// killProcessGraceful terminates a single process.
+// Windows: immediate Kill(). Unix: SIGTERM -> 3s graceful wait -> SIGKILL.
+func killProcessGraceful(process *os.Process) error {
 	// Cross-platform graceful shutdown approach
 	if runtime.GOOS == "windows" {
 		// On Windows, we don't have SIGTERM, so we use Kill directly
@@ -58,7 +64,6 @@ func (h *GoRun) stopProgramUnsafe() error {
 		// If SIGTERM fails, it could be because the process already exited
 		// Check if it's an "os: process already finished" error
 		if err.Error() == "os: process already finished" {
-			h.isRunning = false
 			return nil
 		}
 		// For other errors, try force kill
@@ -85,18 +90,15 @@ func (h *GoRun) stopProgramUnsafe() error {
 		if err := process.Kill(); err != nil {
 			// If kill fails with "process already finished", that's not an error
 			if err.Error() == "os: process already finished" {
-				h.hasWaited = true
 				return nil
 			}
 			return err
 		}
 		// Wait for the process to actually die after kill
 		<-done
-		h.hasWaited = true
 		return nil
 	case err := <-done:
 		// Process terminated gracefully
-		h.hasWaited = true
 		// If we get "no child processes" error, it means the process already exited
 		if err != nil && (err.Error() == "waitid: no child processes" || err.Error() == "wait: no child processes") {
 			return nil // This is not an error, the process already exited

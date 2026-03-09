@@ -9,6 +9,17 @@ import (
 	"strings"
 )
 
+// StopApp terminates all running instances of the named daemon/service.
+// Detects the OS and delegates to the existing platform-specific kill functions.
+func StopApp(name string) error {
+	switch runtime.GOOS {
+	case "windows":
+		return killAllWindows(name)
+	default:
+		return killAllUnix(name)
+	}
+}
+
 // KillAllByName kills all running processes that match the given executable name
 // This is useful for cleanup when multiple instances might be running
 func KillAllByName(executableName string, disableGlobal bool) error {
@@ -28,6 +39,10 @@ func KillAllByName(executableName string, disableGlobal bool) error {
 
 // killAllWindows kills all processes by name on Windows
 func killAllWindows(executableName string) error {
+	if !strings.HasSuffix(strings.ToLower(executableName), ".exe") {
+		executableName += ".exe"
+	}
+
 	// Use taskkill command on Windows
 	cmd := exec.Command("taskkill", "/F", "/IM", executableName)
 	output, err := cmd.CombinedOutput()
@@ -80,11 +95,9 @@ func killAllUnix(executableName string) error {
 			continue
 		}
 
-		// Try graceful kill first (SIGTERM), then force kill if needed
-		if err := process.Signal(os.Interrupt); err != nil {
-			if err := process.Kill(); err != nil {
-				errors = append(errors, fmt.Sprintf("failed to kill process %d: %v", pid, err))
-			}
+		// Reuses extracted graceful kill function
+		if err := killProcessGraceful(process); err != nil {
+			errors = append(errors, fmt.Sprintf("failed to kill process %d: %v", pid, err))
 		}
 	}
 
