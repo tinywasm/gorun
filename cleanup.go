@@ -26,8 +26,17 @@ func KillAllByName(executableName string, disableGlobal bool) error {
 	}
 }
 
+// ensureExeExtension ensures the executable name has a .exe extension
+func ensureExeExtension(executableName string) string {
+	if !strings.HasSuffix(strings.ToLower(executableName), ".exe") {
+		return executableName + ".exe"
+	}
+	return executableName
+}
+
 // killAllWindows kills all processes by name on Windows
 func killAllWindows(executableName string) error {
+	executableName = ensureExeExtension(executableName)
 	// Use taskkill command on Windows
 	cmd := exec.Command("taskkill", "/F", "/IM", executableName)
 	output, err := cmd.CombinedOutput()

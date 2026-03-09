@@ -162,3 +162,24 @@ func TestKillAllByName_NonExistent(t *testing.T) {
 		t.Errorf("KillAllByName should not error for non-existent program: %v", err)
 	}
 }
+
+func TestEnsureExeExtension(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"test", "test.exe"},
+		{"TEST", "TEST.exe"},
+		{"test.exe", "test.exe"},
+		{"TEST.EXE", "TEST.EXE"},
+		{"test.ExE", "test.ExE"},
+		{"another.test", "another.test.exe"},
+	}
+
+	for _, tt := range tests {
+		result := ensureExeExtension(tt.input)
+		if result != tt.expected {
+			t.Errorf("ensureExeExtension(%q) = %q; want %q", tt.input, result, tt.expected)
+		}
+	}
+}
