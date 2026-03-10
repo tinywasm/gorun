@@ -162,3 +162,10 @@ func TestKillAllByName_NonExistent(t *testing.T) {
 		t.Errorf("KillAllByName should not error for non-existent program: %v", err)
 	}
 }
+
+func TestStopApp_NonExistent(t *testing.T) {
+	err := StopApp("nonexistent_program_12345")
+	if err != nil {
+		t.Errorf("StopApp should not error for non-existent program: %v", err)
+	}
+}

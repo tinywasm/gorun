@@ -33,6 +33,9 @@ r := gorun.New(cfg)
 _ = r.RunProgram()
 // ... stop when needed
 _ = r.StopProgram()
+
+// Or stop any running app by name (cross-platform)
+_ = gorun.StopApp("my-server")
 // By default gorun captures output internally. For programmatic access in
 // tests prefer not to rely on exported getters; pass a `Logger` (io.Writer)
 // to receive forwarded output, or inspect the internal buffer from tests.
