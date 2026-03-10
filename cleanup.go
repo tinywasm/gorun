@@ -22,19 +22,12 @@ func StopApp(name string) error {
 
 // KillAllByName kills all running processes that match the given executable name
 // This is useful for cleanup when multiple instances might be running
+// Deprecated: Use StopApp instead.
 func KillAllByName(executableName string, disableGlobal bool) error {
-	// SAFETY: During tests, we might want to disable global cleanup to avoid
-	// accidentally killing the IDE or other unrelated processes.
 	if disableGlobal {
 		return nil
 	}
-
-	switch runtime.GOOS {
-	case "windows":
-		return killAllWindows(executableName)
-	default:
-		return killAllUnix(executableName)
-	}
+	return StopApp(executableName)
 }
 
 // killAllWindows kills all processes by name on Windows
