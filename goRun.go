@@ -43,6 +43,9 @@ func New(c *Config) *GoRun {
 	}
 }
 
+// Ensure GoRun satisfies the Runner interface at compile time.
+var _ Runner = (*GoRun)(nil)
+
 // getOutput returns the captured output in a thread-safe manner (unexported)
 func (h *GoRun) getOutput() string {
 	return h.safeBuffer.String()
